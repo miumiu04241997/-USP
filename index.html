@@ -203,6 +203,41 @@
         </div>
       </div>
 
+      <!-- 周回データ設定（通常・ボス） -->
+      <div class="card">
+        <div class="card-title">⚙️ 周回・ステージ詳細設定</div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>通常 1周消費AP</label>
+            <input type="text" id="apPerRun" value="30" oninput="formatInputWithComma(this); calculate();">
+          </div>
+          <div class="form-group">
+            <label>通常 1周所要時間(秒)</label>
+            <input type="text" id="secPerNormal" value="15" oninput="formatInputWithComma(this); calculate();">
+          </div>
+          <div class="form-group">
+            <label>通常 獲得pt (基礎)</label>
+            <input type="text" id="baseNormalPt" value="15,000" oninput="formatInputWithComma(this); calculate();">
+          </div>
+          <div class="form-group">
+            <label>通常 ドロップ券(枚)</label>
+            <input type="text" id="ticketsPerRun" value="1.5" oninput="calculate();">
+          </div>
+          <div class="form-group">
+            <label>ボス 1戦消費券(枚)</label>
+            <input type="text" id="ticketsPerBoss" value="10" oninput="formatInputWithComma(this); calculate();">
+          </div>
+          <div class="form-group">
+            <label>ボス 1戦所要時間(秒)</label>
+            <input type="text" id="secPerBoss" value="10" oninput="formatInputWithComma(this); calculate();">
+          </div>
+          <div class="form-group full-width">
+            <label>ボス 獲得pt (基礎)</label>
+            <input type="text" id="baseBossPt" value="150,000" oninput="formatInputWithComma(this); calculate();">
+          </div>
+        </div>
+      </div>
+
       <!-- イベントアイテム設定 -->
       <div class="card">
         <div class="card-title">⚡ イベントアイテム設定 (1個=10分)</div>
@@ -280,7 +315,7 @@
       <div class="card">
         <div class="card-title">📊 周回リソース詳細</div>
         <table class="detail-table">
-          <tr><td>通常 (極) 必要周回数</td><td class="val" id="resNormalRuns">0 回</td></tr>
+          <tr><td>通常 必要周回数</td><td class="val" id="resNormalRuns">0 回</td></tr>
           <tr><td>ボス 挑戦回数</td><td class="val" id="resBossRuns">0 回</td></tr>
           <tr><td>獲得ボス券総数</td><td class="val" id="resBossTickets">0 個</td></tr>
           <tr><td>必要総AP</td><td class="val" id="resTotalAp">0 AP</td></tr>
@@ -292,7 +327,6 @@
     </div>
 
     <script>
-      // カンマフォーマット関数
       function toCommaStr(val) {
         const num = parseInt(String(val).replace(/,/g, ''), 10);
         return isNaN(num) ? '0' : num.toLocaleString();
@@ -301,6 +335,12 @@
       function getNumVal(id) {
         const val = document.getElementById(id).value;
         const num = parseInt(String(val).replace(/,/g, ''), 10);
+        return isNaN(num) ? 0 : num;
+      }
+
+      function getFloatVal(id) {
+        const val = document.getElementById(id).value;
+        const num = parseFloat(String(val).replace(/,/g, ''));
         return isNaN(num) ? 0 : num;
       }
 
@@ -329,67 +369,43 @@
         const targetPt = getNumVal('targetPt');
         const maxAp = Math.max(1, getNumVal('maxAp'));
         const packBonus = parseFloat(document.getElementById('packBonus').value);
+        
+        // 周回パラメータ設定値の取得
+        const apPerRun = Math.max(0, getNumVal('apPerRun'));
+        const secPerNormal = Math.max(1, getNumVal('secPerNormal'));
+        const baseNormalPt = getNumVal('baseNormalPt');
+        const ticketsPerRun = Math.max(0, getFloatVal('ticketsPerRun'));
+        const ticketsPerBoss = Math.max(1, getNumVal('ticketsPerBoss'));
+        const secPerBoss = Math.max(1, getNumVal('secPerBoss'));
+        const baseBossPt = getNumVal('baseBossPt');
+
+        // アイテム設定値
         const itemMult = parseFloat(document.getElementById('itemMultiplier').value);
         const itemCount = getNumVal('itemCount');
         const itemTarget = document.getElementById('itemTarget').value;
         const fullPills = getNumVal('fullPills');
         const halfPills = getNumVal('halfPills');
 
-        // 基本パラメータ
-        const apPerRun = 30;
-        const ticketsPerRun = 1.5;
-        const ticketsPerBoss = 10;
-        
-        const baseNormalPt = 15000;
-        const baseBossPt = 150000;
-
-        // アイテム有効時間 (1個 = 10分 = 600秒)
         const itemMinutes = itemCount * 10;
-        
-        // 周回速度仮定 (通常1周=15秒, ボス1周=10秒)
-        const secPerNormal = 15;
-        const secPerBoss = 10;
 
         let totalNormalRuns = 0;
         let totalBossRuns = 0;
 
         if (itemTarget === 'all' && itemMult > 1 && itemCount > 0) {
-          // 通常＆ボス両方にバフ適用
-          let itemSecLeft = itemMinutes * 60;
-          let currentPt = 0;
-          let ticketsOwned = 0;
-
-          // アニメーション/反復計算の簡略版数値解決
-          const effNormalPt = baseNormalPt * packBonus * itemMult;
-          const effBossPt = baseBossPt * packBonus * itemMult;
-
-          // 1周セット（極周回 + ストック分のボス消化）で計算
           const normPt = baseNormalPt * packBonus * itemMult;
           const bossPtPerRun = (ticketsPerRun / ticketsPerBoss) * (baseBossPt * packBonus * itemMult);
           const comboPtPerNorm = normPt + bossPtPerRun;
 
-          totalNormalRuns = Math.ceil(targetPt / comboPtPerNorm);
+          totalNormalRuns = comboPtPerNorm > 0 ? Math.ceil(targetPt / comboPtPerNorm) : 0;
           totalBossRuns = Math.round(totalNormalRuns * (ticketsPerRun / ticketsPerBoss));
 
         } else if (itemTarget === 'boss' && itemMult > 1 && itemCount > 0) {
-          // ボス戦のみにバフ適用（通常ステージは通常の獲得pt）
-          // アイテム使用可能ボス周回数 = (アイテム時間 * 60秒) / 10秒
           const maxBuffedBossRuns = Math.floor((itemMinutes * 60) / secPerBoss);
 
-          // 通常ボスpt / バフボスpt
           const normBossPt = baseBossPt * packBonus;
           const buffedBossPt = baseBossPt * packBonus * itemMult;
           const normStagePt = baseNormalPt * packBonus;
 
-          // 1極周回あたりの平均ボス付加pt
-          // 通常時: 0.15 * normBossPt
-          // バフ時: 0.15 * buffedBossPt
-          
-          // 全体ptから逆算
-          let currentPt = 0;
-          let normRuns = 0;
-
-          // 概算ループ解法
           const unitComboPtBuffed = normStagePt + (ticketsPerRun / ticketsPerBoss) * buffedBossPt;
           const unitComboPtNorm = normStagePt + (ticketsPerRun / ticketsPerBoss) * normBossPt;
 
@@ -397,21 +413,20 @@
           const ptFromBuffedSection = reqBuffedNormRuns * unitComboPtBuffed;
 
           if (targetPt <= ptFromBuffedSection) {
-            totalNormalRuns = Math.ceil(targetPt / unitComboPtBuffed);
+            totalNormalRuns = unitComboPtBuffed > 0 ? Math.ceil(targetPt / unitComboPtBuffed) : 0;
           } else {
             const remainPt = targetPt - ptFromBuffedSection;
-            const addNormRuns = Math.ceil(remainPt / unitComboPtNorm);
+            const addNormRuns = unitComboPtNorm > 0 ? Math.ceil(remainPt / unitComboPtNorm) : 0;
             totalNormalRuns = reqBuffedNormRuns + addNormRuns;
           }
           totalBossRuns = Math.round(totalNormalRuns * (ticketsPerRun / ticketsPerBoss));
 
         } else {
-          // アイテムバフなし
           const normPt = baseNormalPt * packBonus;
           const bossPt = baseBossPt * packBonus;
           const comboPt = normPt + (ticketsPerRun / ticketsPerBoss) * bossPt;
 
-          totalNormalRuns = Math.ceil(targetPt / comboPt);
+          totalNormalRuns = comboPt > 0 ? Math.ceil(targetPt / comboPt) : 0;
           totalBossRuns = Math.round(totalNormalRuns * (ticketsPerRun / ticketsPerBoss));
         }
 
@@ -421,25 +436,18 @@
         const shortageAp = Math.max(0, totalAp - ownedAp);
         const neededFullPills = Math.ceil(shortageAp / maxAp);
 
-        // 周回時間計算 (分)
         const totalMinutes = Math.round(((totalNormalRuns * secPerNormal) + (totalBossRuns * secPerBoss)) / 60);
         const dailyHours = (totalMinutes / 60 / 7).toFixed(1);
 
-        // 課金額の自動計算
-        // 1. 攻略パック: 3,000円 (パックボーナスが2の場合)
         const packCost = (packBonus === 2) ? 3000 : 0;
-        
-        // 2. イベントアイテム: 1時間(6個) = 1,200円 ➔ 1個 = 200円
         const itemCost = itemCount * 200;
-
-        // 3. AP全回復薬: 24個 = 1,200円 ➔ 1個 = 50円
         const apCost = neededFullPills * 50;
 
         const totalCost = packCost + itemCost + apCost;
 
-        // 画面書き換え
+        // 画面出力
         document.getElementById('shortageAp').textContent = shortageAp.toLocaleString() + ' AP';
-        document.getElementById('shortagePillText').textContent = `全回復: あと${neededFullPills.toLocaleString()}個 (${neededFullPills * 50}円相当)`;
+        document.getElementById('shortagePillText').textContent = `全回復: あと${neededFullPills.toLocaleString()}個 (${(neededFullPills * 50).toLocaleString()}円相当)`;
         
         document.getElementById('dailyTime').textContent = dailyHours + ' 時間';
         document.getElementById('totalTimeText').textContent = `総計: ${(totalMinutes / 60).toFixed(1)} 時間 (7日換算)`;
@@ -461,24 +469,38 @@
           targetPt: document.getElementById('targetPt').value,
           maxAp: document.getElementById('maxAp').value,
           packBonus: document.getElementById('packBonus').value,
+          apPerRun: document.getElementById('apPerRun').value,
+          secPerNormal: document.getElementById('secPerNormal').value,
+          baseNormalPt: document.getElementById('baseNormalPt').value,
+          ticketsPerRun: document.getElementById('ticketsPerRun').value,
+          ticketsPerBoss: document.getElementById('ticketsPerBoss').value,
+          secPerBoss: document.getElementById('secPerBoss').value,
+          baseBossPt: document.getElementById('baseBossPt').value,
           itemMultiplier: document.getElementById('itemMultiplier').value,
           itemCount: document.getElementById('itemCount').value,
           itemTarget: document.getElementById('itemTarget').value,
           fullPills: document.getElementById('fullPills').value,
           halfPills: document.getElementById('halfPills').value
         };
-        localStorage.setItem('event_sim_settings', JSON.stringify(data));
+        localStorage.setItem('event_sim_settings_v2', JSON.stringify(data));
         alert('設定を保存しました！');
       }
 
       function loadSettings() {
-        const raw = localStorage.getItem('event_sim_settings');
+        const raw = localStorage.getItem('event_sim_settings_v2');
         if (!raw) return alert('保存された設定がありません。');
         const data = JSON.parse(raw);
 
         if (data.targetPt) document.getElementById('targetPt').value = data.targetPt;
         if (data.maxAp) document.getElementById('maxAp').value = data.maxAp;
         if (data.packBonus) document.getElementById('packBonus').value = data.packBonus;
+        if (data.apPerRun) document.getElementById('apPerRun').value = data.apPerRun;
+        if (data.secPerNormal) document.getElementById('secPerNormal').value = data.secPerNormal;
+        if (data.baseNormalPt) document.getElementById('baseNormalPt').value = data.baseNormalPt;
+        if (data.ticketsPerRun) document.getElementById('ticketsPerRun').value = data.ticketsPerRun;
+        if (data.ticketsPerBoss) document.getElementById('ticketsPerBoss').value = data.ticketsPerBoss;
+        if (data.secPerBoss) document.getElementById('secPerBoss').value = data.secPerBoss;
+        if (data.baseBossPt) document.getElementById('baseBossPt').value = data.baseBossPt;
         if (data.itemMultiplier) document.getElementById('itemMultiplier').value = data.itemMultiplier;
         if (data.itemCount) document.getElementById('itemCount').value = data.itemCount;
         if (data.itemTarget) document.getElementById('itemTarget').value = data.itemTarget;
@@ -493,6 +515,13 @@
         document.getElementById('targetPt').value = '400,000,000';
         document.getElementById('maxAp').value = '823';
         document.getElementById('packBonus').value = '2';
+        document.getElementById('apPerRun').value = '30';
+        document.getElementById('secPerNormal').value = '15';
+        document.getElementById('baseNormalPt').value = '15,000';
+        document.getElementById('ticketsPerRun').value = '1.5';
+        document.getElementById('ticketsPerBoss').value = '10';
+        document.getElementById('secPerBoss').value = '10';
+        document.getElementById('baseBossPt').value = '150,000';
         document.getElementById('itemMultiplier').value = '6';
         document.getElementById('itemCount').value = '0';
         document.getElementById('itemTarget').value = 'all';
