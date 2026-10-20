@@ -387,47 +387,71 @@
         const halfPills = getNumVal('halfPills');
 
         const itemMinutes = itemCount * 10;
+        const itemSec = itemMinutes * 60;
 
         let totalNormalRuns = 0;
         let totalBossRuns = 0;
 
-        if (itemTarget === 'all' && itemMult > 1 && itemCount > 0) {
-          const normPt = baseNormalPt * packBonus * itemMult;
-          const bossPtPerRun = (ticketsPerRun / ticketsPerBoss) * (baseBossPt * packBonus * itemMult);
-          const comboPtPerNorm = normPt + bossPtPerRun;
+        const bossRatio = ticketsPerBoss > 0 ? (ticketsPerRun / ticketsPerBoss) : 0;
 
-          totalNormalRuns = comboPtPerNorm > 0 ? Math.ceil(targetPt / comboPtPerNorm) : 0;
-          totalBossRuns = Math.round(totalNormalRuns * (ticketsPerRun / ticketsPerBoss));
+        // 1周あたりの基礎pt（バフなし）
+        const normStagePt = baseNormalPt * packBonus;
+        const normBossPt = baseBossPt * packBonus;
+        const unitComboPtNorm = normStagePt + (bossRatio * normBossPt);
 
-        } else if (itemTarget === 'boss' && itemMult > 1 && itemCount > 0) {
-          const maxBuffedBossRuns = Math.floor((itemMinutes * 60) / secPerBoss);
+        if (itemMult > 1 && itemCount > 0) {
+          if (itemTarget === 'all') {
+            // 通常＋ボス両方にバフ適用
+            const buffedStagePt = baseNormalPt * packBonus * itemMult;
+            const buffedBossPt = baseBossPt * packBonus * itemMult;
+            const unitComboPtBuffed = buffedStagePt + (bossRatio * buffedBossPt);
 
-          const normBossPt = baseBossPt * packBonus;
-          const buffedBossPt = baseBossPt * packBonus * itemMult;
-          const normStagePt = baseNormalPt * packBonus;
+            // 1セット（1極周回 + それで貯まるボス周回）にかかる時間（秒）
+            const timePerSet = secPerNormal + (bossRatio * secPerBoss);
+            
+            // アイテム時間内で実行可能なセット数
+            const maxBuffedSets = Math.floor(itemSec / timePerSet);
+            // アイテム時間内で稼げるポイント
+            const ptBuffed = maxBuffedSets * unitComboPtBuffed;
 
-          const unitComboPtBuffed = normStagePt + (ticketsPerRun / ticketsPerBoss) * buffedBossPt;
-          const unitComboPtNorm = normStagePt + (ticketsPerRun / ticketsPerBoss) * normBossPt;
+            if (targetPt <= ptBuffed) {
+              totalNormalRuns = unitComboPtBuffed > 0 ? Math.ceil(targetPt / unitComboPtBuffed) : 0;
+              totalBossRuns = Math.round(totalNormalRuns * bossRatio);
+            } else {
+              const remainPt = targetPt - ptBuffed;
+              const addNormRuns = unitComboPtNorm > 0 ? Math.ceil(remainPt / unitComboPtNorm) : 0;
+              totalNormalRuns = maxBuffedSets + addNormRuns;
+              totalBossRuns = Math.round(totalNormalRuns * bossRatio);
+            }
 
-          const reqBuffedNormRuns = Math.ceil(maxBuffedBossRuns / (ticketsPerRun / ticketsPerBoss));
-          const ptFromBuffedSection = reqBuffedNormRuns * unitComboPtBuffed;
+          } else if (itemTarget === 'boss') {
+            // ボス戦のみにバフ適用
+            const buffedBossPt = baseBossPt * packBonus * itemMult;
+            
+            // アイテム時間内で実行可能なバフボス戦数
+            const maxBuffedBossRuns = Math.floor(itemSec / secPerBoss);
+            
+            // バフボス戦数をこなすのに必要な極周回数
+            const reqBuffedNormRuns = bossRatio > 0 ? Math.ceil(maxBuffedBossRuns / bossRatio) : 0;
+            
+            // バフボス期間中に稼げるポイント
+            const unitComboPtBuffed = normStagePt + (bossRatio * buffedBossPt);
+            const ptBuffedSection = reqBuffedNormRuns * unitComboPtBuffed;
 
-          if (targetPt <= ptFromBuffedSection) {
-            totalNormalRuns = unitComboPtBuffed > 0 ? Math.ceil(targetPt / unitComboPtBuffed) : 0;
-          } else {
-            const remainPt = targetPt - ptFromBuffedSection;
-            const addNormRuns = unitComboPtNorm > 0 ? Math.ceil(remainPt / unitComboPtNorm) : 0;
-            totalNormalRuns = reqBuffedNormRuns + addNormRuns;
+            if (targetPt <= ptBuffedSection) {
+              totalNormalRuns = unitComboPtBuffed > 0 ? Math.ceil(targetPt / unitComboPtBuffed) : 0;
+              totalBossRuns = Math.round(totalNormalRuns * bossRatio);
+            } else {
+              const remainPt = targetPt - ptBuffedSection;
+              const addNormRuns = unitComboPtNorm > 0 ? Math.ceil(remainPt / unitComboPtNorm) : 0;
+              totalNormalRuns = reqBuffedNormRuns + addNormRuns;
+              totalBossRuns = Math.round(totalNormalRuns * bossRatio);
+            }
           }
-          totalBossRuns = Math.round(totalNormalRuns * (ticketsPerRun / ticketsPerBoss));
-
         } else {
-          const normPt = baseNormalPt * packBonus;
-          const bossPt = baseBossPt * packBonus;
-          const comboPt = normPt + (ticketsPerRun / ticketsPerBoss) * bossPt;
-
-          totalNormalRuns = comboPt > 0 ? Math.ceil(targetPt / comboPt) : 0;
-          totalBossRuns = Math.round(totalNormalRuns * (ticketsPerRun / ticketsPerBoss));
+          // アイテム使用なし
+          totalNormalRuns = unitComboPtNorm > 0 ? Math.ceil(targetPt / unitComboPtNorm) : 0;
+          totalBossRuns = Math.round(totalNormalRuns * bossRatio);
         }
 
         const totalTickets = Math.round(totalNormalRuns * ticketsPerRun);
@@ -482,12 +506,12 @@
           fullPills: document.getElementById('fullPills').value,
           halfPills: document.getElementById('halfPills').value
         };
-        localStorage.setItem('event_sim_settings_v2', JSON.stringify(data));
+        localStorage.setItem('event_sim_settings_v3', JSON.stringify(data));
         alert('設定を保存しました！');
       }
 
       function loadSettings() {
-        const raw = localStorage.getItem('event_sim_settings_v2');
+        const raw = localStorage.getItem('event_sim_settings_v3');
         if (!raw) return alert('保存された設定がありません。');
         const data = JSON.parse(raw);
 
