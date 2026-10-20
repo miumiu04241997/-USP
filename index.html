@@ -228,10 +228,14 @@
             <input type="text" id="ticketsPerBoss" value="10" oninput="formatInputWithComma(this); calculate();">
           </div>
           <div class="form-group">
+            <label>ボス 1戦消費AP</label>
+            <input type="text" id="apPerBoss" value="0" oninput="formatInputWithComma(this); calculate();">
+          </div>
+          <div class="form-group">
             <label>ボス 1戦所要時間(秒)</label>
             <input type="text" id="secPerBoss" value="10" oninput="formatInputWithComma(this); calculate();">
           </div>
-          <div class="form-group full-width">
+          <div class="form-group">
             <label>ボス 獲得pt (基礎)</label>
             <input type="text" id="baseBossPt" value="150,000" oninput="formatInputWithComma(this); calculate();">
           </div>
@@ -376,6 +380,7 @@
         const baseNormalPt = getNumVal('baseNormalPt');
         const ticketsPerRun = Math.max(0, getFloatVal('ticketsPerRun'));
         const ticketsPerBoss = Math.max(1, getNumVal('ticketsPerBoss'));
+        const apPerBoss = Math.max(0, getNumVal('apPerBoss'));
         const secPerBoss = Math.max(1, getNumVal('secPerBoss'));
         const baseBossPt = getNumVal('baseBossPt');
 
@@ -406,12 +411,11 @@
             const buffedBossPt = baseBossPt * packBonus * itemMult;
             const unitComboPtBuffed = buffedStagePt + (bossRatio * buffedBossPt);
 
-            // 1セット（1極周回 + それで貯まるボス周回）にかかる時間（秒）
+            // 1セットにかかる時間（秒）
             const timePerSet = secPerNormal + (bossRatio * secPerBoss);
             
             // アイテム時間内で実行可能なセット数
             const maxBuffedSets = Math.floor(itemSec / timePerSet);
-            // アイテム時間内で稼げるポイント
             const ptBuffed = maxBuffedSets * unitComboPtBuffed;
 
             if (targetPt <= ptBuffed) {
@@ -427,14 +431,9 @@
           } else if (itemTarget === 'boss') {
             // ボス戦のみにバフ適用
             const buffedBossPt = baseBossPt * packBonus * itemMult;
-            
-            // アイテム時間内で実行可能なバフボス戦数
             const maxBuffedBossRuns = Math.floor(itemSec / secPerBoss);
-            
-            // バフボス戦数をこなすのに必要な極周回数
             const reqBuffedNormRuns = bossRatio > 0 ? Math.ceil(maxBuffedBossRuns / bossRatio) : 0;
             
-            // バフボス期間中に稼げるポイント
             const unitComboPtBuffed = normStagePt + (bossRatio * buffedBossPt);
             const ptBuffedSection = reqBuffedNormRuns * unitComboPtBuffed;
 
@@ -455,7 +454,10 @@
         }
 
         const totalTickets = Math.round(totalNormalRuns * ticketsPerRun);
-        const totalAp = totalNormalRuns * apPerRun;
+
+        // 総消費AP = (通常周回数 × 通常AP) + (ボス挑戦回数 × ボスAP)
+        const totalAp = (totalNormalRuns * apPerRun) + (totalBossRuns * apPerBoss);
+
         const ownedAp = (fullPills * maxAp) + (halfPills * 50);
         const shortageAp = Math.max(0, totalAp - ownedAp);
         const neededFullPills = Math.ceil(shortageAp / maxAp);
@@ -498,6 +500,7 @@
           baseNormalPt: document.getElementById('baseNormalPt').value,
           ticketsPerRun: document.getElementById('ticketsPerRun').value,
           ticketsPerBoss: document.getElementById('ticketsPerBoss').value,
+          apPerBoss: document.getElementById('apPerBoss').value,
           secPerBoss: document.getElementById('secPerBoss').value,
           baseBossPt: document.getElementById('baseBossPt').value,
           itemMultiplier: document.getElementById('itemMultiplier').value,
@@ -506,12 +509,12 @@
           fullPills: document.getElementById('fullPills').value,
           halfPills: document.getElementById('halfPills').value
         };
-        localStorage.setItem('event_sim_settings_v3', JSON.stringify(data));
+        localStorage.setItem('event_sim_settings_v4', JSON.stringify(data));
         alert('設定を保存しました！');
       }
 
       function loadSettings() {
-        const raw = localStorage.getItem('event_sim_settings_v3');
+        const raw = localStorage.getItem('event_sim_settings_v4');
         if (!raw) return alert('保存された設定がありません。');
         const data = JSON.parse(raw);
 
@@ -523,6 +526,7 @@
         if (data.baseNormalPt) document.getElementById('baseNormalPt').value = data.baseNormalPt;
         if (data.ticketsPerRun) document.getElementById('ticketsPerRun').value = data.ticketsPerRun;
         if (data.ticketsPerBoss) document.getElementById('ticketsPerBoss').value = data.ticketsPerBoss;
+        if (data.apPerBoss) document.getElementById('apPerBoss').value = data.apPerBoss;
         if (data.secPerBoss) document.getElementById('secPerBoss').value = data.secPerBoss;
         if (data.baseBossPt) document.getElementById('baseBossPt').value = data.baseBossPt;
         if (data.itemMultiplier) document.getElementById('itemMultiplier').value = data.itemMultiplier;
@@ -544,6 +548,7 @@
         document.getElementById('baseNormalPt').value = '15,000';
         document.getElementById('ticketsPerRun').value = '1.5';
         document.getElementById('ticketsPerBoss').value = '10';
+        document.getElementById('apPerBoss').value = '0';
         document.getElementById('secPerBoss').value = '10';
         document.getElementById('baseBossPt').value = '150,000';
         document.getElementById('itemMultiplier').value = '6';
