@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        background-color: #f0f2f5;
+        margin: 0;
+        padding: 10px;
+        display: flex;
+        justify-content: center;
+        color: #2d3748;
+      }
+      .container {
+        background: #ffffff;
+        border-radius: 16px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        padding: 14px;
+        width: 100%;
+        max-width: 480px;
+      }
+      h2 {
+        margin-top: 0;
+        margin-bottom: 12px;
+        font-size: 1.15rem;
+        color: #1a202c;
+        border-bottom: 2px solid #3182ce;
+        padding-bottom: 8px;
+        text-align: center;
+      }
+
+      /* プリセットボタン */
+      .preset-bar {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 6px;
+        margin-bottom: 12px;
+      }
+      .btn-preset {
+        padding: 8px 0;
+        font-size: 0.75rem;
+        font-weight: bold;
+        background: #ebf8ff;
+        color: #2b6cb0;
+        border: 1px solid #bee3f8;
+        border-radius: 8px;
+        cursor: pointer;
+        touch-action: manipulation;
+        -webkit-tap-highlight-color: transparent;
+      }
+      .btn-preset:active {
+        background: #3182ce;
+        color: white;
+      }
+
+      /* カードセクション */
+      .card {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 12px;
+        margin-bottom: 12px;
+      }
+      .card-title {
+        font-size: 0.82rem;
+        font-weight: bold;
+        color: #2d3748;
+        margin-bottom: 10px;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+      }
+
+      /* 入力フォーム */
+      .input-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+      }
+      .input-group {
+        display: flex;
+        flex-direction: column;
+      }
+      .input-group.full {
+        grid-column: span 2;
+      }
+      .input-group label {
+        font-size: 0.7rem;
+        font-weight: bold;
+        color: #4a5568;
+        margin-bottom: 4px;
+      }
+      .input-group input, .input-group select {
+        font-size: 0.95rem;
+        padding: 8px;
+        border: 1px solid #cbd5e0;
+        border-radius: 8px;
+        background: white;
+        width: 100%;
+        -webkit-appearance: none;
+      }
+      .input-group input:focus, .input-group select:focus {
+        outline: none;
+        border-color: #3182ce;
+        box-shadow: 0 0 0 3px rgba(49, 130, 206, 0.2);
+      }
+
+      /* クイック加算ボタン付 */
+      .quick-btns {
+        display: flex;
+        gap: 4px;
+        margin-top: 4px;
+      }
+      .btn-quick {
+        flex: 1;
+        padding: 4px 0;
+        font-size: 0.65rem;
+        background: #edf2f7;
+        border: 1px solid #cbd5e0;
+        border-radius: 4px;
+        color: #4a5568;
+        font-weight: bold;
+        cursor: pointer;
+        touch-action: manipulation;
+      }
+      .btn-quick:active {
+        background: #cbd5e0;
+      }
+
+      /* トグルアコーディオン */
+      .accordion-toggle {
+        font-size: 0.75rem;
+        color: #3182ce;
+        font-weight: bold;
+        cursor: pointer;
+        text-align: center;
+        padding: 4px 0;
+        user-select: none;
+        touch-action: manipulation;
+      }
+
+      /* メインハイライト結果 */
+      .highlight-container {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 8px;
+        margin-bottom: 12px;
+      }
+      .highlight-box {
+        background: #fff5f5;
+        border: 1px solid #feb2b2;
+        border-radius: 12px;
+        padding: 10px 6px;
+        text-align: center;
+      }
+      .highlight-box.blue {
+        background: #ebf8ff;
+        border-color: #90cdf4;
+      }
+      .highlight-label {
+        font-size: 0.68rem;
+        font-weight: bold;
+        color: #742a2a;
+      }
+      .highlight-box.blue .highlight-label {
+        color: #2c5282;
+      }
+      .highlight-val {
+        font-size: 1.15rem;
+        font-weight: bold;
+        color: #e53e3e;
+        margin-top: 2px;
+        line-height: 1.2;
+      }
+      .highlight-box.blue .highlight-val {
+        color: #2b6cb0;
+      }
+      .highlight-sub {
+        font-size: 0.62rem;
+        color: #718096;
+        margin-top: 4px;
+      }
+
+      /* 結果グリッド */
+      .result-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 6px;
+        font-size: 0.72rem;
+      }
+      .result-row {
+        background: white;
+        padding: 8px 8px;
+        border-radius: 8px;
+        border: 1px solid #edf2f7;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .result-row span.label {
+        color: #718096;
+      }
+      .result-row span.val {
+        font-weight: bold;
+        color: #2d3748;
+      }
+
+      /* コピーボタン */
+      .btn-copy {
+        width: 100%;
+        padding: 12px 0;
+        background: #38a169;
+        color: white;
+        font-size: 0.88rem;
+        font-weight: bold;
+        border: none;
+        border-radius: 10px;
+        cursor: pointer;
+        transition: opacity 0.2s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        touch-action: manipulation;
+        box-shadow: 0 3px 10px rgba(56, 161, 105, 0.25);
+      }
+      .btn-copy:active { opacity: 0.8; }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h2>🏃 イベラン周回シミュレーター</h2>
+
+      <!-- 目標ptクイックプリセット -->
+      <div class="preset-bar">
+        <button class="btn-preset" onclick="setTargetPt(100000000)">1億pt</button>
+        <button class="btn-preset" onclick="setTargetPt(250000000)">2.5億pt</button>
+        <button class="btn-preset" onclick="setTargetPt(350000000)">3.5億pt</button>
+        <button class="btn-preset" onclick="setTargetPt(400000000)">4億pt</button>
+      </div>
+
+      <!-- 基本設定 -->
+      <div class="card">
+        <div class="card-title">📝 基本設定</div>
+        <div class="input-grid">
+          <div class="input-group full">
+            <label>目標イベントポイント (pt)</label>
+            <input type="number" inputmode="numeric" id="targetPt" value="400000000" oninput="calculate()">
+          </div>
+          <div class="input-group">
+            <label>現在の最大AP</label>
+            <input type="number" inputmode="numeric" id="maxAp" value="823" oninput="calculate()">
+          </div>
+          <div class="input-group">
+            <label>攻略パック（2倍）</label>
+            <select id="hasPack" onchange="calculate()">
+              <option value="あり">あり (2倍)</option>
+              <option value="なし">なし (1倍)</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- 手持ちAP回復アイテム入力（全回復 ＆ 50AP薬） -->
+      <div class="card">
+        <div class="card-title">💊 手持ちAP回復アイテム</div>
+        <div class="input-grid">
+          <!-- 全回復薬 -->
+          <div class="input-group">
+            <label>全回復薬 (最大AP分)</label>
+            <input type="number" inputmode="numeric" id="currentFullDrugs" value="0" placeholder="0" oninput="calculate()">
+            <div class="quick-btns">
+              <button class="btn-quick" onclick="addDrug('currentFullDrugs', 10)">+10</button>
+              <button class="btn-quick" onclick="addDrug('currentFullDrugs', 50)">+50</button>
+              <button class="btn-quick" onclick="addDrug('currentFullDrugs', 100)">+100</button>
+            </div>
+          </div>
+          <!-- 50AP薬 -->
+          <div class="input-group">
+            <label>AP50回復薬 (50AP分)</label>
+            <input type="number" inputmode="numeric" id="currentSmallDrugs" value="0" placeholder="0" oninput="calculate()">
+            <div class="quick-btns">
+              <button class="btn-quick" onclick="addDrug('currentSmallDrugs', 10)">+10</button>
+              <button class="btn-quick" onclick="addDrug('currentSmallDrugs', 50)">+50</button>
+              <button class="btn-quick" onclick="addDrug('currentSmallDrugs', 100)">+100</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 詳細設定（アコーディオン） -->
+      <div class="card">
+        <div class="accordion-toggle" onclick="toggleAdvanced()">⚙️ 詳細設定（獲得pt・周回速度の微調整）</div>
+        <div id="advancedArea" style="display: none; margin-top: 10px;" class="input-grid">
+          <div class="input-group">
+            <label>極 消費AP</label>
+            <input type="number" inputmode="numeric" id="apCost" value="30" oninput="calculate()">
+          </div>
+          <div class="input-group">
+            <label>極 基礎pt</label>
+            <input type="number" inputmode="numeric" id="basePt" value="15000" oninput="calculate()">
+          </div>
+          <div class="input-group">
+            <label>ボス券 泥期待値</label>
+            <input type="number" step="0.1" inputmode="decimal" id="bossTicketDrop" value="1.5" oninput="calculate()">
+          </div>
+          <div class="input-group">
+            <label>ボス戦 必要券数</label>
+            <input type="number" inputmode="numeric" id="bossTicketReq" value="10" oninput="calculate()">
+          </div>
+          <div class="input-group">
+            <label>ボス戦 基礎pt</label>
+            <input type="number" inputmode="numeric" id="bossBasePt" value="150000" oninput="calculate()">
+          </div>
+          <div class="input-group">
+            <label>極 1周速度 (秒)</label>
+            <input type="number" inputmode="numeric" id="speedGoku" value="12" oninput="calculate()">
+          </div>
+          <div class="input-group full">
+            <label>ボス戦 1回速度 (秒)</label>
+            <input type="number" inputmode="numeric" id="speedBoss" value="15" oninput="calculate()">
+          </div>
+        </div>
+      </div>
+
+      <!-- メインハイライト結果 -->
+      <div class="highlight-container">
+        <div class="highlight-box">
+          <div class="highlight-label">🚨 不足AP量</div>
+          <div class="highlight-val" id="resShortageAp">0 AP</div>
+          <div class="highlight-sub" id="resShortageDetail">全回復: 0個分 / 50AP: 0個分</div>
+        </div>
+        <div class="highlight-box blue">
+          <div class="highlight-label">⏱️ 1日あたりの周回時間</div>
+          <div class="highlight-val" id="resDailyTime">0 時間</div>
+          <div class="highlight-sub" id="resTotalTime">総計: 0 時間 (7日換算)</div>
+        </div>
+      </div>
+
+      <!-- 周回リソース詳細 -->
+      <div class="card">
+        <div class="card-title">📊 周回リソース詳細</div>
+        <div class="result-grid">
+          <div class="result-row">
+            <span class="label">極 必要周回:</span>
+            <span class="val" id="resGokuRuns">0 回</span>
+          </div>
+          <div class="result-row">
+            <span class="label">ボス 挑戦回数:</span>
+            <span class="val" id="resBossRuns">0 回</span>
+          </div>
+          <div class="result-row">
+            <span class="label">獲得ボス券総数:</span>
+            <span class="val" id="resTotalTickets">0 個</span>
+          </div>
+          <div class="result-row">
+            <span class="label">必要総AP:</span>
+            <span class="val" id="resTotalAp">0 AP</span>
+          </div>
+          <div class="result-row" style="grid-column: span 2;">
+            <span class="label">手持ち所持AP合計:</span>
+            <span class="val" id="resStockAp">0 AP</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 結果コピーボタン -->
+      <button class="btn-copy" onclick="copyResult()">📋 計算結果をコピー</button>
+    </div>
+
+    <script>
+      function setTargetPt(pt) {
+        document.getElementById('targetPt').value = pt;
+        calculate();
+      }
+
+      function addDrug(id, val) {
+        const input = document.getElementById(id);
+        const current = Number(input.value) || 0;
+        input.value = current + val;
+        calculate();
+      }
+
+      function toggleAdvanced() {
+        const area = document.getElementById('advancedArea');
+        area.style.display = area.style.display === 'none' ? 'grid' : 'none';
+      }
+
+      function calculate() {
+        const targetPt = Number(document.getElementById('targetPt').value) || 0;
+        const maxAp = Number(document.getElementById('maxAp').value) || 1;
+        const hasPack = document.getElementById('hasPack').value === 'あり';
+        
+        // 手持ち薬
+        const currentFullDrugs = Number(document.getElementById('currentFullDrugs').value) || 0;
+        const currentSmallDrugs = Number(document.getElementById('currentSmallDrugs').value) || 0;
+
+        // パラメーター
+        const apCost = Number(document.getElementById('apCost').value) || 30;
+        const basePt = Number(document.getElementById('basePt').value) || 0;
+        const bossTicketDrop = Number(document.getElementById('bossTicketDrop').value) || 0;
+        const bossTicketReq = Number(document.getElementById('bossTicketReq').value) || 1;
+        const bossBasePt = Number(document.getElementById('bossBasePt').value) || 0;
+        const speedGoku = Number(document.getElementById('speedGoku').value) || 0;
+        const speedBoss = Number(document.getElementById('speedBoss').value) || 0;
+
+        // 1. 実効獲得倍率 & 1周実効pt
+        const multiplier = hasPack ? 2 : 1;
+        const effectivePtPerRun = (basePt + (bossTicketDrop / bossTicketReq) * bossBasePt) * multiplier;
+
+        // 2. 周回数 & ボス戦数
+        const gokuRuns = effectivePtPerRun > 0 ? Math.ceil(targetPt / effectivePtPerRun) : 0;
+        const totalTickets = Math.floor(gokuRuns * bossTicketDrop);
+        const bossRuns = Math.floor(totalTickets / bossTicketReq);
+
+        // 3. 必要AP ＆ 手持ちAP計算
+        const totalAp = gokuRuns * apCost;
+        const currentStockAp = (currentFullDrugs * maxAp) + (currentSmallDrugs * 50);
+        const shortageAp = Math.max(0, totalAp - currentStockAp);
+
+        // 不足分を全回復薬 / 50AP薬に換算
+        const shortageFullDrugs = Math.ceil(shortageAp / maxAp);
+        const shortageSmallDrugs = Math.ceil(shortageAp / 50);
+
+        // 4. 所要時間 (秒 -> 時間)
+        const totalTimeHours = ((gokuRuns * speedGoku + bossRuns * speedBoss) / 3600);
+        const dailyTimeHours = totalTimeHours / 7;
+
+        // 画面出力
+        document.getElementById('resShortageAp').textContent = `${shortageAp.toLocaleString()} AP`;
+        document.getElementById('resShortageDetail').textContent = `全回復: あと${shortageFullDrugs.toLocaleString()}個 / 50AP: あと${shortageSmallDrugs.toLocaleString()}個`;
+        
+        document.getElementById('resDailyTime').textContent = `${dailyTimeHours.toFixed(1)} 時間`;
+        document.getElementById('resTotalTime').textContent = `総計: ${totalTimeHours.toFixed(1)} 時間 (7日換算)`;
+
+        document.getElementById('resGokuRuns').textContent = `${gokuRuns.toLocaleString()} 回`;
+        document.getElementById('resBossRuns').textContent = `${bossRuns.toLocaleString()} 回`;
+        document.getElementById('resTotalTickets').textContent = `${totalTickets.toLocaleString()} 個`;
+        document.getElementById('resTotalAp').textContent = `${totalAp.toLocaleString()} AP`;
+        document.getElementById('resStockAp').textContent = `${currentStockAp.toLocaleString()} AP`;
+      }
+
+      function copyResult() {
+        const targetPt = (Number(document.getElementById('targetPt').value) / 100000000).toFixed(2);
+        const shortageAp = document.getElementById('resShortageAp').textContent;
+        const shortageDetail = document.getElementById('resShortageDetail').textContent;
+        const daily = document.getElementById('resDailyTime').textContent;
+        const goku = document.getElementById('resGokuRuns').textContent;
+        const boss = document.getElementById('resBossRuns').textContent;
+        const totalAp = document.getElementById('resTotalAp').textContent;
+
+        const text = `【イベラン計画】目標: ${targetPt}億pt\n` +
+                     `・不足AP: あと ${shortageAp}\n` +
+                     `  (${shortageDetail})\n` +
+                     `・1日目安時間: ${daily} / 日 (7日間)\n` +
+                     `・極 周回数: ${goku}\n` +
+                     `・ボス挑戦数: ${boss}\n` +
+                     `・必要総AP: ${totalAp}`;
+
+        navigator.clipboard.writeText(text).then(() => {
+          alert('結果をクリップボードにコピーしました！');
+        }).catch(() => {
+          prompt('以下のテキストをコピーしてください：', text);
+        });
+      }
+
+      window.onload = calculate;
+    </script>
+  </body>
+</html>
